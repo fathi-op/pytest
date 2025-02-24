@@ -28,19 +28,7 @@ def get_post_by_id_with_validation(post_id: int) -> dict[str, Any] | None:
         raise ValueError('post_id must be greater than 0')
     try:
         response = http_get(f'{BASE_URL}/{post_id}')
-        # print(response)
-        # print(response.json()[1]['userId'])
         response.raise_for_status()
         return response.json()
     except HTTPError:
-        # print(response.json()[1]['userId'])
         return None
-    
-    
-# get_post_by_id()
-# get_posts_by_user_id(None)
-# get_posts_by_user_id(-1)
-
-# get_post_by_id_with_validation(-1)
-
-# get_post_by_id_with_validation(0)

@@ -1,53 +1,49 @@
-from unittest.mock import patch
-from api import get_post_by_id, get_posts_by_user_id, get_post_by_id_with_validation
-answer = [1,10,0,0,'',20, -1, 0]
-def test_get_post_by_id():
-    result = get_post_by_id(1)
-    print(result)
-    assert result is not None 
-    assert 'id' in result
-    assert result['id'] == answer[0]
+import pytest
+from requests.exceptions import HTTPError
 
-def test_get_post_by_id_part2():
-    result = get_post_by_id(15-5)
-    print(result)
-    assert result is not None 
-    assert 'id' in result
-    assert result['id'] == answer[1]
-
-def test_get_posts_by_user_id():
-    result = get_posts_by_user_id(1)
-    print(result)
-    assert result['id'] == answer[2]
-
-def test_get_posts_by_user_id_without_validation():
-    result = get_posts_by_user_id(0)
-    assert result is not None
-    assert len(result) >= 0
+from api import (
+    get_post_by_id,
+    get_posts_by_user_id,
+    get_post_by_id_with_validation
+)
 
 
-def test_get_posts_by_user_id_with_changes():
-    r = get_posts_by_user_id(None)
-    assert r is not None
-    assert len(r) >= 0
-    assert r['id'] == answer[3]
+def test_get_post_by_id_1(mocker):
+    mock_response = mocker.Mock()
+    mock_response.json.return_value = {'id': 1, 'title': 'Test Post 1'}
+    mocker.patch('api.http_get', return_value=mock_response)
+    assert get_post_by_id(1) == {'id': 1, 'title': 'Test Post 1'}
 
 
-def test_get_post_by_id_with_validation():
-    result = get_post_by_id_with_validation(20)
-    assert result is not None
-    assert 'id' in result 
-    assert result['id'] == answer[4]
-
-    
-
-def test_get_post_by_id_with_validation_negative():
-    result = get_post_by_id_with_validation(-1)
-    assert result['id'] == -1
-    assert result['id'] == answer[5]
+def test_get_post_by_id_2(mocker):
+    mocker.patch('api.http_get', side_effect=HTTPError('HTTP Error'))
+    assert get_post_by_id(1) is None
 
 
-def test_get_post_by_id_with_validation_zero():
-    result = get_post_by_id_with_validation(0)
-    assert result['id'] == 0
-    assert result['id'] == answer[6]
+def test_get_posts_by_user_id(mocker):
+    mock_response = mocker.Mock()
+    mock_response.json.return_value = [{'id': 1, 'userId': 1, 'title': 'User 1 Post 1'}]
+    mocker.patch('api.http_get', return_value=mock_response)
+    assert get_posts_by_user_id(1) == [{'id': 1, 'userId': 1, 'title': 'User 1 Post 1'}]
+
+
+def test_get_posts_by_user_id_http(mocker):
+    mocker.patch('api.http_get', side_effect=HTTPError('HTTP Error'))
+    assert get_posts_by_user_id(1) is None
+
+
+def test_get_post_by_id_with_validation_1(mocker):
+    mock_response = mocker.Mock()
+    mock_response.json.return_value = {'id': 1, 'title': 'Valid Post'}
+    mocker.patch('api.http_get', return_value=mock_response)
+    assert get_post_by_id_with_validation(1) == {'id': 1, 'title': 'Valid Post'}
+
+
+def test_get_post_by_id_with_validation_no_connect(mocker):
+    mocker.patch('api.http_get', side_effect=HTTPError('HTTP Error'))
+    assert get_post_by_id_with_validation(1) is None
+
+
+def test_get_post_by_id_with_validation_invalid_post_id():
+    with pytest.raises(ValueError, match='post_id must be greater than 0'):
+        get_post_by_id_with_validation(-1)
