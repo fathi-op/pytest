@@ -1,6 +1,5 @@
 import pytest
 from api import get_post_by_id, get_posts_by_user_id,get_post_by_id_with_validation
-
 from requests.exceptions import HTTPError
 
 
